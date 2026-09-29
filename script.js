@@ -49,13 +49,22 @@
 // this is the real mechanism: the section's background div starts at
 // opacity:0 with the animated WebP already set as its CSS background, and
 // once the section is ~20% into view it fades in (".flyin"), waits 7s, then
-// reveals the heading/paragraph (".show"). Leaving the section resets the
-// background image with a cache-busting query string so it decodes fresh
-// next time — that reset is the live site's own workaround for the browser
-// freezing a CSS-background animated WebP on an inconsistent frame, which is
-// exactly the "wrong frame / overlapping text" symptom that was reported.
+// reveals the heading/paragraph (".show"). The background image is reset
+// with a cache-busting query string so it decodes fresh next time — that
+// reset is the live site's own workaround for the browser freezing a
+// CSS-background animated WebP on an inconsistent frame, which is exactly
+// the "wrong frame / overlapping text" symptom that was reported.
 // Only the hardcoded bsi2.com.my URLs have been repointed to the local
 // images/ folder.
+//
+// Each section plays its reveal once and then STAYS revealed while you
+// scroll around the page — it does not reset just because it scrolled out
+// of view (that was the original behaviour here, and it's what caused
+// sections to silently re-arm and replay every time you scrolled back up
+// past them). The only thing that resets all 5 sections back to their
+// pre-animation state is scrolling all the way back to the very top of the
+// page, handled by the shared listener at the bottom of this file.
+const sectionResetters = [];
 document.addEventListener('DOMContentLoaded', function() {
 
     const f_section = document.querySelector('#id-fengsui');
@@ -83,18 +92,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function fengsuiAnimation(){
 
-		
         f_section.scrollIntoView({
             behavior:'smooth',
             block:'center'
         });
 
         f_left.classList.add('flyin');
-		
-        addTimer(() => {
-            f_right.classList.add('flyin');
-        }, 100);
-
 
         addTimer(() => {
             f_description?.classList.add('show');
@@ -128,6 +131,12 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
+    sectionResetters.push(function () {
+        if (animationDone || animationRunning) {
+            resetFengsui();
+        }
+    });
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
@@ -135,10 +144,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
             fengsuiAnimation();
-        }
-
-        if(!entry.isIntersecting && animationDone && !animationRunning){
-            resetFengsui();
         }
 
     }, {
@@ -215,6 +220,12 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
+    sectionResetters.push(function () {
+        if (animationDone || animationRunning) {
+            resetAmenities();
+        }
+    });
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
@@ -222,10 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
             amenitiesAnimation();
-        }
-
-        if(!entry.isIntersecting && animationDone && !animationRunning){
-            resetAmenities();
         }
 
     }, {
@@ -303,6 +310,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		animationRunning = false;
     }
 
+    sectionResetters.push(function () {
+        if (animationDone || animationRunning) {
+            resetHeritage();
+        }
+    });
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
@@ -310,10 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
             heritageAnimation();
-        }
-
-        if(!entry.isIntersecting && animationDone && !animationRunning){
-            resetHeritage();
         }
 
     }, {
@@ -394,6 +403,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		animationRunning = false;
 	}
 
+    sectionResetters.push(function () {
+        if (animationDone || animationRunning) {
+            resetConnectivity();
+        }
+    });
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
@@ -405,14 +420,6 @@ document.addEventListener('DOMContentLoaded', function() {
         ) {
             animationRunning = true;
             connectivityAnimation();
-        }
-
-        if (
-            !entry.isIntersecting &&
-            animationDone &&
-            !animationRunning
-        ) {
-            resetConnectivity();
         }
 
     }, {
@@ -489,6 +496,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		animationRunning = false;
 	}
 
+    sectionResetters.push(function () {
+        if (animationDone || animationRunning) {
+            resetEcology();
+        }
+    });
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
@@ -498,10 +511,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ecologyAnimation();
         }
 
-        if(!entry.isIntersecting && animationDone && !animationRunning){
-            resetEcology();
-        }
-
     }, {
         threshold:0.2
     });
@@ -509,6 +518,24 @@ document.addEventListener('DOMContentLoaded', function() {
     observer.observe(e_section);
 
 });
+
+// Shared top-of-page scroll listener: the only thing that resets all 5
+// scroll-reveal sections back to their pre-animation state is scrolling all
+// the way back up to the very top of the page. We track the top/not-top
+// state and only fire the resetters on the transition INTO "at top", so
+// resetting doesn't repeatedly fire while the visitor lingers at the top.
+(function () {
+  let atTop = window.scrollY <= 10;
+  window.addEventListener('scroll', function () {
+    const isTop = window.scrollY <= 10;
+    if (isTop && !atTop) {
+      atTop = true;
+      sectionResetters.forEach(function (fn) { fn(); });
+    } else if (!isTop && atTop) {
+      atTop = false;
+    }
+  }, { passive: true });
+})();
 
 // Registration form — the real site renders this client-side via WPForms,
 // which isn't part of the static page markup we ported, so this is a
