@@ -2,8 +2,8 @@
 //
 // Hero background video: only fetch/decode whichever of the two ~35MB hero
 // MP4s (desktop / mobile) actually matches the visitor's screen. Both
-// <video autoplay> elements are always present in the DOM (Elementor just
-// toggles which one is display:none via CSS at the 768px breakpoint), and a
+// <video autoplay> elements are always present in the DOM (CSS just
+// toggles which one is display:none at the 768px breakpoint), and a
 // hidden autoplay video still gets fetched and decoded by the browser — so
 // without this, every visit loads and decodes ~70MB of video instead of the
 // ~35MB actually shown. index.html carries the real path in data-src instead
@@ -12,8 +12,8 @@
 // (if it hasn't loaded yet) is activated at that point too.
 (function () {
   var mql = window.matchMedia('(max-width: 767px)');
-  var desktopVideo = document.querySelector('.hero .elementor-background-video-container video');
-  var mobileVideo = document.querySelector('.hero-mobile .elementor-background-video-container video');
+  var desktopVideo = document.querySelector('.hero .bg-video-container video');
+  var mobileVideo = document.querySelector('.hero-mobile .bg-video-container video');
 
   function activateHeroVideo(video) {
     if (!video || video.src) return; // missing, or already activated
