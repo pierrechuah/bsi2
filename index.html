@@ -6,6 +6,15 @@
 <title>Bandar Seri Impian II - a place that stays Close at Heart</title>
 <meta name="description" content="Bandar Seri Impian II - a place that stays Close at Heart, by Matrix Concepts, Kluang, Johor.">
 <link rel="stylesheet" href="styles.css">
+<!-- Preload the "Request Private Briefing" hover-state image. Without this,
+     the browser only fetches BTN_Request-private-briefing_hover.png the
+     moment the user first hovers the button — and since the button's text
+     and background-color are both transparent (the visible "button" is
+     entirely this background-image), there's a beat with nothing painted
+     at all until the image arrives, i.e. the button appears to vanish on
+     the very first hover. Preloading it up front means it's already cached
+     before anyone can hover. -->
+<link rel="preload" as="image" href="images/BTN_Request-private-briefing_hover.png">
 </head>
 <body class="elementor-kit-6">
 <div class="elementor elementor-3476" data-elementor-id="3476" data-elementor-post-type="page" data-elementor-type="wp-post">
