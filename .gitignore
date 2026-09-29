@@ -1,0 +1,8 @@
+# Reference-only material, not part of the deployed site
+raw-originals-from-wp/
+Claude outputs/
+.DS_Store
+# iCloud placeholder file, not needed for the deployed site
+README.md
+# Large leftover raw video archive, not referenced by the deployed site
+images/video.zip
