@@ -97,6 +97,20 @@ html[dir=rtl] {
   max-width: 100%;
 }
 
+/* The 5 mobile full-width section photos (ecology/connectivity/heritage/
+   amenities/fengshui) are plain <img> tags, and a plain inline <img> always
+   leaves a few pixels of phantom whitespace below it (browsers reserve room
+   for a descender, as if it were a line of text) unless it's block-level.
+   That gap was showing as a thin sliver of the page background between each
+   photo and the coloured text panel directly under it. */
+.page-root .el.ecology-mobile-bg img,
+.page-root .el.connectivity-mobile-bg img,
+.page-root .el.heritage-mobile-bg img,
+.page-root .el.amenities-mobile-bg img,
+.page-root .el.fengshui-mobile-bg img {
+  display: block;
+}
+
 .site-root .widget:not(.widget-text):not(.widget-theme-post-content) figure {
   margin: 0;
 }
@@ -2309,6 +2323,7 @@ h1.entry-title {
 }
 
 .page-root .el.registration-heading {
+  margin: 4px 0px calc(var(--kit-widget-spacing, 0px) + 20px) 0px;
   text-align: center;
 }
 
@@ -2453,6 +2468,7 @@ h1.entry-title {
   .page-root .el.hero-mobile-logo {
     margin: -27px 0px calc(var(--kit-widget-spacing, 0px) + 0px) 0px;
     padding: 16px 0px 0px 0px;
+    text-align: center;
   }
 
   .page-root .el.hero-mobile-logo img {
@@ -2468,6 +2484,10 @@ h1.entry-title {
 
   .page-root .el.hero-mobile-register-wrap.flex-box {
     --align-self: center;
+  }
+
+  .page-root .el.hero-mobile-register-btn {
+    text-align: center;
   }
 
   .page-root .el.hero-mobile-register-btn img {
