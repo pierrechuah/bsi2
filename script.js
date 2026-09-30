@@ -64,7 +64,20 @@
 // past them). The only thing that resets all 5 sections back to their
 // pre-animation state is scrolling all the way back to the very top of the
 // page, handled by the shared listener at the bottom of this file.
+//
+// A section is also force-finished the moment it scrolls fully above the
+// viewport (its bottom edge passes the top of the screen) — not just when
+// its own IntersectionObserver happens to fire a "leaving" event. A fast
+// scroll/fling straight to the bottom of the page can carry a section
+// past the viewport without ever crossing the observer's visibility
+// threshold at all, which used to leave it never-triggered — so scrolling
+// back up into it played the full reveal from scratch. The shared listener
+// at the bottom of this file walks sectionForceCompleters on every scroll
+// and settles anything that's been scrolled past but never finished, so
+// every section you've already been below is already in its final state
+// by the time you scroll back up to look at it, animation never required.
 const sectionResetters = [];
+const sectionForceCompleters = [];
 document.addEventListener('DOMContentLoaded', function() {
 
     const f_section = document.querySelector('#id-fengsui');
@@ -123,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         clearTimers();
 
+        f_left.classList.add('flyin');
         f_description?.classList.add('show');
         f_left.style.backgroundImage = `url(${f_finalBg})`;
 
@@ -156,6 +170,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (animationDone || animationRunning) {
             resetFengsui();
         }
+    });
+
+    sectionForceCompleters.push({
+        section: f_section,
+        isDone: () => animationDone,
+        complete: completeFengsuiNow
     });
 
     const observer = new IntersectionObserver((entries) => {
@@ -231,6 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         clearTimers();
 
+        a_left.classList.add('flyin');
         a_description?.classList.add('show');
         a_left.style.backgroundImage = `url(${a_finalBg})`;
 
@@ -264,6 +285,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (animationDone || animationRunning) {
             resetAmenities();
         }
+    });
+
+    sectionForceCompleters.push({
+        section: a_section,
+        isDone: () => animationDone,
+        complete: completeAmenitiesNow
     });
 
     const observer = new IntersectionObserver((entries) => {
@@ -341,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         clearTimers();
 
+        h_left.classList.add('flyin');
         h_description?.classList.add('show');
         h_left.style.backgroundImage = `url(${h_finalBg})`;
 
@@ -373,6 +401,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (animationDone || animationRunning) {
             resetHeritage();
         }
+    });
+
+    sectionForceCompleters.push({
+        section: h_section,
+        isDone: () => animationDone,
+        complete: completeHeritageNow
     });
 
     const observer = new IntersectionObserver((entries) => {
@@ -452,6 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         clearTimers();
 
+        c_left.classList.add('flyin');
         c_description?.classList.add('show');
         c_left.style.backgroundImage = `url(${c_finalBg})`;
 
@@ -485,6 +520,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (animationDone || animationRunning) {
             resetConnectivity();
         }
+    });
+
+    sectionForceCompleters.push({
+        section: c_section,
+        isDone: () => animationDone,
+        complete: completeConnectivityNow
     });
 
     const observer = new IntersectionObserver((entries) => {
@@ -570,6 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         clearTimers();
 
+        e_left.classList.add('flyin');
         e_description?.classList.add('show');
         e_left.style.backgroundImage = `url(${e_finalBg})`;
 
@@ -601,6 +643,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (animationDone || animationRunning) {
             resetEcology();
         }
+    });
+
+    sectionForceCompleters.push({
+        section: e_section,
+        isDone: () => animationDone,
+        complete: completeEcologyNow
     });
 
     const observer = new IntersectionObserver((entries) => {
@@ -639,6 +687,28 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (!isTop && atTop) {
       atTop = false;
     }
+  }, { passive: true });
+})();
+
+// Shared "already scrolled past it" listener: a section is force-finished
+// the moment its bottom edge scrolls above the top of the viewport, even if
+// its own IntersectionObserver never got a chance to fire (a fast scroll or
+// fling straight to the bottom of the page can carry a section past the
+// screen without ever rendering a frame where it crosses the observer's
+// visibility threshold). Without this, a section skipped over that way was
+// still "unstarted" as far as its own code knew, so scrolling back up into
+// it later played the full reveal from scratch — exactly the "I have to
+// watch the animation" complaint. Checking on every scroll, rather than
+// only via IntersectionObserver, catches that case too.
+(function () {
+  window.addEventListener('scroll', function () {
+    sectionForceCompleters.forEach(function (entry) {
+      if (entry.isDone()) return;
+      var rect = entry.section.getBoundingClientRect();
+      if (rect.bottom <= 0) {
+        entry.complete();
+      }
+    });
   }, { passive: true });
 })();
 
