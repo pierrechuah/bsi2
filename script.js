@@ -90,6 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
         timers = [];
     }
 
+    const f_finalBg = 'images/FENGSHUI_final.webp';
+
     function fengsuiAnimation(){
 
         f_section.scrollIntoView({
@@ -104,9 +106,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 7000);
 
         addTimer(() => {
+            f_left.style.backgroundImage = `url(${f_finalBg})`;
             animationDone = true;
             animationRunning = false;
         }, 8000);
+    }
+
+    // Skip straight to the finished state: used when the section gets
+    // scrolled away from before its own 7-9s reveal has finished playing.
+    // Rather than leaving the timers to fire later in the background (which
+    // is what caused the description text / final frame to visibly "blip"
+    // in whenever you happened to scroll back past mid-flight), we settle
+    // everything immediately so a returning visitor always sees the fully
+    // revealed, static end state — never a half-finished one.
+    function completeFengsuiNow(){
+
+        clearTimers();
+
+        f_description?.classList.add('show');
+        f_left.style.backgroundImage = `url(${f_finalBg})`;
+
+        animationDone = true;
+        animationRunning = false;
     }
 
     function resetFengsui(){
@@ -146,6 +167,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fengsuiAnimation();
         }
 
+        if(!entry.isIntersecting && animationRunning && !animationDone){
+            completeFengsuiNow();
+        }
+
     }, {
         threshold:0.2
     });
@@ -179,6 +204,8 @@ document.addEventListener('DOMContentLoaded', function() {
         timers = [];
     }
 
+    const a_finalBg = 'images/AMENITIES_final.webp';
+
     function amenitiesAnimation(){
 
         a_section.scrollIntoView({
@@ -193,9 +220,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 7000);
 
         addTimer(() => {
+            a_left.style.backgroundImage = `url(${a_finalBg})`;
             animationDone = true;
             animationRunning = false;
         }, 8000);
+    }
+
+    // See completeFengsuiNow() above for why this exists.
+    function completeAmenitiesNow(){
+
+        clearTimers();
+
+        a_description?.classList.add('show');
+        a_left.style.backgroundImage = `url(${a_finalBg})`;
+
+        animationDone = true;
+        animationRunning = false;
     }
 
     function resetAmenities(){
@@ -235,6 +275,10 @@ document.addEventListener('DOMContentLoaded', function() {
             amenitiesAnimation();
         }
 
+        if(!entry.isIntersecting && animationRunning && !animationDone){
+            completeAmenitiesNow();
+        }
+
     }, {
         threshold:0.2
     });
@@ -268,10 +312,12 @@ document.addEventListener('DOMContentLoaded', function() {
         timers = [];
     }
 
+    const h_finalBg = 'images/HOME_final.webp';
+
     function heritageAnimation(){
 
-		
-		
+
+
         h_section.scrollIntoView({
             behavior:'smooth',
             block:'center'
@@ -284,9 +330,22 @@ document.addEventListener('DOMContentLoaded', function() {
 			h_description?.classList.add('show');
 		}, 7000);
         addTimer(() => {
+            h_left.style.backgroundImage = `url(${h_finalBg})`;
             animationDone = true;
             animationRunning = false;
         }, 8000);
+    }
+
+    // See completeFengsuiNow() near the top of this file for why this exists.
+    function completeHeritageNow(){
+
+        clearTimers();
+
+        h_description?.classList.add('show');
+        h_left.style.backgroundImage = `url(${h_finalBg})`;
+
+        animationDone = true;
+        animationRunning = false;
     }
 
     function resetHeritage(){
@@ -325,6 +384,10 @@ document.addEventListener('DOMContentLoaded', function() {
             heritageAnimation();
         }
 
+        if(!entry.isIntersecting && animationRunning && !animationDone){
+            completeHeritageNow();
+        }
+
     }, {
         threshold:0.2
     });
@@ -358,6 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
         timers = [];
     }
 
+    const c_finalBg = 'images/HUB_final.webp';
+
     function connectivityAnimation(){
 
         c_section.scrollIntoView({
@@ -368,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // LEFT BACKGROUND FLY IN
         c_left.classList.add('flyin');
 
-       
+
         // SHOW DESCRIPTION
         addTimer(() => {
             c_description?.classList.add('show');
@@ -376,9 +441,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ANIMATION DONE
         addTimer(() => {
+            c_left.style.backgroundImage = `url(${c_finalBg})`;
             animationDone = true;
             animationRunning = false;
         }, 9000);
+    }
+
+    // See completeFengsuiNow() near the top of this file for why this exists.
+    function completeConnectivityNow(){
+
+        clearTimers();
+
+        c_description?.classList.add('show');
+        c_left.style.backgroundImage = `url(${c_finalBg})`;
+
+        animationDone = true;
+        animationRunning = false;
     }
 
     function resetConnectivity(){
@@ -422,6 +500,14 @@ document.addEventListener('DOMContentLoaded', function() {
             connectivityAnimation();
         }
 
+        if (
+            !entry.isIntersecting &&
+            animationRunning &&
+            !animationDone
+        ) {
+            completeConnectivityNow();
+        }
+
     }, {
         threshold: 0.2
     });
@@ -455,6 +541,8 @@ document.addEventListener('DOMContentLoaded', function() {
         timers = [];
     }
 
+    const e_finalBg = 'images/ECOLOGY_final.webp';
+
     function ecologyAnimation(){
 
         e_section.scrollIntoView({
@@ -470,10 +558,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 7000);
 
         addTimer(() => {
+            e_left.style.backgroundImage = `url(${e_finalBg})`;
             animationDone = true;
             animationRunning = false;
 			console.log("animation done");
         }, 8000);
+    }
+
+    // See completeFengsuiNow() near the top of this file for why this exists.
+    function completeEcologyNow(){
+
+        clearTimers();
+
+        e_description?.classList.add('show');
+        e_left.style.backgroundImage = `url(${e_finalBg})`;
+
+        animationDone = true;
+        animationRunning = false;
     }
 
     function resetEcology(){
@@ -509,6 +610,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
             ecologyAnimation();
+        }
+
+        if(!entry.isIntersecting && animationRunning && !animationDone){
+            completeEcologyNow();
         }
 
     }, {
