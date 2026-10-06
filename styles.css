@@ -2908,7 +2908,7 @@ h1.entry-title {
   left: 0;
   width: 100%;
   z-index: 1;
-  background-image: url("images/FENGSHUI.webp");
+  background-image: var(--reveal-bg, none); /* set by script.js shortly before the section is reached */
   background-position: center center;
 }
 
@@ -2958,7 +2958,7 @@ h1.entry-title {
   opacity: 0;
   z-index: 2;
   overflow: hidden;
-  background-image: url("images/AMENITIES.webp");
+  background-image: var(--reveal-bg, none); /* set by script.js shortly before the section is reached */
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -3017,7 +3017,7 @@ h1.entry-title {
   left: 0;
   width: 100%;
   z-index: 1;
-  background-image: url("images/HOME.webp");
+  background-image: var(--reveal-bg, none); /* set by script.js shortly before the section is reached */
   background-position: center center;
 }
 
@@ -3085,7 +3085,7 @@ h1.entry-title {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("images/HUB.webp");
+  background-image: var(--reveal-bg, none); /* set by script.js shortly before the section is reached */
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -3159,7 +3159,7 @@ h1.entry-title {
   left: 0;
   width: 100%;
   z-index: 1;
-  background-image: url("images/ECOLOGY.webp");
+  background-image: var(--reveal-bg, none); /* set by script.js shortly before the section is reached */
   background-position: center center;
 }
 

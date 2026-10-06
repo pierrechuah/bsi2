@@ -114,6 +114,72 @@
 // by the time you scroll back up to look at it, animation never required.
 const sectionResetters = [];
 const sectionForceCompleters = [];
+
+// Lazy loading for the 5 desktop section animations. Each is a 6-15MB
+// animated WebP (~47MB together). They used to be plain CSS backgrounds, so
+// the browser downloaded all of them the moment the page loaded — even
+// though they're far below the fold and invisible (opacity 0) until
+// revealed — and that traffic starved the hero poster and logo, pushing
+// Largest Contentful Paint out to many seconds on a normal connection. Now
+// the CSS only uses `var(--reveal-bg)`; this fills it in:
+//   * loadSectionBg() downloads the file, then sets the variable. Each
+//     section's reveal waits on it, so the animation never starts on a
+//     half-downloaded image.
+//   * prefetchSectionBg() starts that download about a screen before the
+//     section is reached, but only once the rest of the page has finished
+//     loading, so it can never compete with first paint.
+// A section that is skipped past entirely never downloads its big file at
+// all: it goes straight to its small static final frame.
+const sectionBgLoads = new Map();
+function loadSectionBg(el, url) {
+  if (!sectionBgLoads.has(el)) {
+    sectionBgLoads.set(el, new Promise(function (resolve) {
+      const img = new Image();
+      const done = function () {
+        el.style.setProperty('--reveal-bg', 'url("' + url + '")');
+        resolve();
+      };
+      img.onload = done;
+      img.onerror = done;
+      try { img.fetchPriority = 'low'; } catch (e) {}
+      img.src = url;
+    }));
+  }
+  return sectionBgLoads.get(el);
+}
+function whenStillVisible(el, ms) {
+  // Resolves true only if `el` is still on screen after `ms`, so a fast
+  // fling past a section doesn't kick off its big download or reveal.
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      const r = el.getBoundingClientRect();
+      resolve(r.bottom > 0 && r.top < window.innerHeight * 0.8);
+    }, ms);
+  });
+}
+function prefetchSectionBg(section, el, url) {
+  function start() {
+    let timer = null;
+    const observer = new IntersectionObserver(function (entries) {
+      const near = entries.some(function (e) { return e.isIntersecting; });
+      clearTimeout(timer);
+      if (!near) return;
+      // Wait a moment and check the section is still within reach, so a fast
+      // fling past it doesn't trigger a 6-15MB download nobody will see.
+      timer = setTimeout(function () {
+        const rect = section.getBoundingClientRect();
+        if (rect.bottom <= 0) { observer.disconnect(); return; } // already passed
+        if (rect.top < window.innerHeight * 2) {
+          observer.disconnect();
+          loadSectionBg(el, url);
+        }
+      }, 500);
+    }, { rootMargin: '0px 0px 100% 0px' });
+    observer.observe(section);
+  }
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start);
+}
 document.addEventListener('DOMContentLoaded', function() {
 
     const f_section = document.querySelector('#id-fengsui');
@@ -214,13 +280,19 @@ document.addEventListener('DOMContentLoaded', function() {
         complete: completeFengsuiNow
     });
 
+    prefetchSectionBg(f_section, f_left, 'images/FENGSHUI.webp');
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
 
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
-            fengsuiAnimation();
+            whenStillVisible(f_section, 350).then(function (ok) {
+                if (animationDone) return;
+                if (!ok) { animationRunning = false; return; }
+                loadSectionBg(f_left, 'images/FENGSHUI.webp').then(() => { if (animationRunning && !animationDone) fengsuiAnimation(); });
+            });
         }
 
         if(!entry.isIntersecting && animationRunning && !animationDone){
@@ -329,13 +401,19 @@ document.addEventListener('DOMContentLoaded', function() {
         complete: completeAmenitiesNow
     });
 
+    prefetchSectionBg(a_section, a_left, 'images/AMENITIES.webp');
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
 
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
-            amenitiesAnimation();
+            whenStillVisible(a_section, 350).then(function (ok) {
+                if (animationDone) return;
+                if (!ok) { animationRunning = false; return; }
+                loadSectionBg(a_left, 'images/AMENITIES.webp').then(() => { if (animationRunning && !animationDone) amenitiesAnimation(); });
+            });
         }
 
         if(!entry.isIntersecting && animationRunning && !animationDone){
@@ -445,13 +523,19 @@ document.addEventListener('DOMContentLoaded', function() {
         complete: completeHeritageNow
     });
 
+    prefetchSectionBg(h_section, h_left, 'images/HOME.webp');
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
 
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
-            heritageAnimation();
+            whenStillVisible(h_section, 350).then(function (ok) {
+                if (animationDone) return;
+                if (!ok) { animationRunning = false; return; }
+                loadSectionBg(h_left, 'images/HOME.webp').then(() => { if (animationRunning && !animationDone) heritageAnimation(); });
+            });
         }
 
         if(!entry.isIntersecting && animationRunning && !animationDone){
@@ -564,6 +648,8 @@ document.addEventListener('DOMContentLoaded', function() {
         complete: completeConnectivityNow
     });
 
+    prefetchSectionBg(c_section, c_left, 'images/HUB.webp');
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
@@ -574,7 +660,11 @@ document.addEventListener('DOMContentLoaded', function() {
             !animationDone
         ) {
             animationRunning = true;
-            connectivityAnimation();
+            whenStillVisible(c_section, 350).then(function (ok) {
+                if (animationDone) return;
+                if (!ok) { animationRunning = false; return; }
+                loadSectionBg(c_left, 'images/HUB.webp').then(() => { if (animationRunning && !animationDone) connectivityAnimation(); });
+            });
         }
 
         if (
@@ -687,13 +777,19 @@ document.addEventListener('DOMContentLoaded', function() {
         complete: completeEcologyNow
     });
 
+    prefetchSectionBg(e_section, e_left, 'images/ECOLOGY.webp');
+
     const observer = new IntersectionObserver((entries) => {
 
         const entry = entries[0];
 
         if(entry.isIntersecting && !animationRunning && !animationDone){
             animationRunning = true;
-            ecologyAnimation();
+            whenStillVisible(e_section, 350).then(function (ok) {
+                if (animationDone) return;
+                if (!ok) { animationRunning = false; return; }
+                loadSectionBg(e_left, 'images/ECOLOGY.webp').then(() => { if (animationRunning && !animationDone) ecologyAnimation(); });
+            });
         }
 
         if(!entry.isIntersecting && animationRunning && !animationDone){
@@ -763,8 +859,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function showFinal() {
       clearTimeout(timer);
       state = 'done';
-      img.loading = 'eager';
+      // Assign the new src first: flipping to eager while the old (heavy)
+      // animated file is still the src would start downloading it.
       img.src = it.done;
+      img.loading = 'eager';
     }
 
     function play() {
@@ -788,7 +886,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function reset() {
       clearTimeout(timer);
       state = 'pending';
-      img.loading = 'eager';
       img.src = BLACK;
     }
 
