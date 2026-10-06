@@ -93,13 +93,10 @@
 // Only the hardcoded bsi2.com.my URLs have been repointed to the local
 // images/ folder.
 //
-// Each section plays its reveal once and then STAYS revealed while you
-// scroll around the page — it does not reset just because it scrolled out
-// of view (that was the original behaviour here, and it's what caused
-// sections to silently re-arm and replay every time you scrolled back up
-// past them). The only thing that resets all 5 sections back to their
-// pre-animation state is scrolling all the way back to the very top of the
-// page, handled by the shared listener at the bottom of this file.
+// Each section plays its reveal once per visit and then STAYS revealed — it
+// never resets or replays, whether it scrolled out of view or the visitor
+// returns to the top of the page. (Resetting meant re-downloading the 6-15MB
+// animated file with a cache-busting URL every time, for no real benefit.)
 //
 // A section is also force-finished the moment it scrolls fully above the
 // viewport (its bottom edge passes the top of the screen) — not just when
@@ -112,7 +109,6 @@
 // and settles anything that's been scrolled past but never finished, so
 // every section you've already been below is already in its final state
 // by the time you scroll back up to look at it, animation never required.
-const sectionResetters = [];
 const sectionForceCompleters = [];
 
 // Lazy loading for the 5 desktop section animations. Each is a 6-15MB
@@ -246,33 +242,6 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
-    function resetFengsui(){
-
-        clearTimers();
-
-        f_left.classList.remove('flyin','flyout');
-
-        const bg = 'images/FENGSHUI.webp';
-
-        f_left.style.backgroundImage = 'none';
-
-        setTimeout(() => {
-            f_left.style.backgroundImage = `url(${bg}?t=${Date.now()})`;
-        }, 50);
-
-        if(f_description){
-            f_description.classList.remove('show');
-        }
-
-        animationDone = false;
-        animationRunning = false;
-    }
-
-    sectionResetters.push(function () {
-        if (animationDone || animationRunning) {
-            resetFengsui();
-        }
-    });
 
     sectionForceCompleters.push({
         section: f_section,
@@ -367,33 +336,6 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
-    function resetAmenities(){
-
-        clearTimers();
-
-        a_left.classList.remove('flyin','flyout');
-
-        const bg = 'images/AMENITIES.webp';
-
-        a_left.style.backgroundImage = 'none';
-
-        setTimeout(() => {
-            a_left.style.backgroundImage = `url(${bg}?t=${Date.now()})`;
-        }, 50);
-
-        if(a_description){
-            a_description.classList.remove('show');
-        }
-
-        animationDone = false;
-        animationRunning = false;
-    }
-
-    sectionResetters.push(function () {
-        if (animationDone || animationRunning) {
-            resetAmenities();
-        }
-    });
 
     sectionForceCompleters.push({
         section: a_section,
@@ -490,32 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
-    function resetHeritage(){
-
-        clearTimers();
-		h_left.classList.remove('flyin','flyout');
-
-		const bg = 'images/HOME.webp';
-
-		h_left.style.backgroundImage = 'none';
-
-		setTimeout(() => {
-			h_left.style.backgroundImage = `url(${bg}?t=${Date.now()})`;
-		}, 50);
-
-		if(h_description){
-			h_description.classList.remove('show');
-		}
-
-		animationDone = false;
-		animationRunning = false;
-    }
-
-    sectionResetters.push(function () {
-        if (animationDone || animationRunning) {
-            resetHeritage();
-        }
-    });
 
     sectionForceCompleters.push({
         section: h_section,
@@ -614,33 +530,6 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
-    function resetConnectivity(){
-
-		clearTimers();
-
-		c_left.classList.remove('flyin','flyout');
-
-		const bg = 'images/HUB.webp';
-
-		c_left.style.backgroundImage = 'none';
-
-		setTimeout(() => {
-			c_left.style.backgroundImage = `url(${bg}?t=${Date.now()})`;
-		}, 50);
-
-		if(c_description){
-			c_description.classList.remove('show');
-		}
-
-		animationDone = false;
-		animationRunning = false;
-	}
-
-    sectionResetters.push(function () {
-        if (animationDone || animationRunning) {
-            resetConnectivity();
-        }
-    });
 
     sectionForceCompleters.push({
         section: c_section,
@@ -745,31 +634,6 @@ document.addEventListener('DOMContentLoaded', function() {
         animationRunning = false;
     }
 
-    function resetEcology(){
-		clearTimers();
-		e_left.classList.remove('flyin','flyout');
-
-		const bg = 'images/ECOLOGY.webp';
-
-		e_left.style.backgroundImage = 'none';
-
-		setTimeout(() => {
-			e_left.style.backgroundImage = `url(${bg}?t=${Date.now()})`;
-		}, 50);
-
-		if(e_description){
-			e_description.classList.remove('show');
-		}
-
-		animationDone = false;
-		animationRunning = false;
-	}
-
-    sectionResetters.push(function () {
-        if (animationDone || animationRunning) {
-            resetEcology();
-        }
-    });
 
     sectionForceCompleters.push({
         section: e_section,
@@ -820,8 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //                the end of the animation, ~30-50KB instead of ~1.5MB)
 // A photo that is scrolled past, or scrolled out of view mid-reveal, jumps
 // straight to "done" so scrolling back up always shows the finished
-// artwork, never a replay. Scrolling back to the very top of the page
-// resets them to "pending" along with the desktop sections.
+// artwork, never a replay. Like the desktop sections, each photo plays
+// once per visit and never resets.
 (function () {
   const BLACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     "<svg xmlns='http://www.w3.org/2000/svg' width='700' height='393'>" +
@@ -911,33 +775,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if (entries[entries.length - 1].isIntersecting) warm();
     }, { rootMargin: '0px 0px 100% 0px' }).observe(img);
 
-    sectionResetters.push(function () {
-      if (!isHidden()) reset();
-    });
     sectionForceCompleters.push({
       section: img,
       isDone: function () { return state === 'done'; },
       complete: function () { if (!isHidden()) showFinal(); }
     });
   });
-})();
-
-// Shared top-of-page scroll listener: the only thing that resets all 5
-// scroll-reveal sections back to their pre-animation state is scrolling all
-// the way back up to the very top of the page. We track the top/not-top
-// state and only fire the resetters on the transition INTO "at top", so
-// resetting doesn't repeatedly fire while the visitor lingers at the top.
-(function () {
-  let atTop = window.scrollY <= 10;
-  window.addEventListener('scroll', function () {
-    const isTop = window.scrollY <= 10;
-    if (isTop && !atTop) {
-      atTop = true;
-      sectionResetters.forEach(function (fn) { fn(); });
-    } else if (!isTop && atTop) {
-      atTop = false;
-    }
-  }, { passive: true });
 })();
 
 // Shared "already scrolled past it" listener: a section is force-finished
