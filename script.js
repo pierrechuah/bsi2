@@ -14,12 +14,17 @@
   var mql = window.matchMedia('(max-width: 767px)');
   var desktopVideo = document.querySelector('.hero .bg-video-container video');
   var mobileVideo = document.querySelector('.hero-mobile .bg-video-container video');
+  var initialActivationDone = false;
 
   function activateHeroVideo(video) {
     if (!video || video.src) return; // missing, or already activated
     var source = video.getAttribute('data-src');
     if (!source) return;
     video.removeAttribute('data-src');
+    // Tell the browser this fetch can take a back seat to anything else
+    // still loading (logo, poster, fonts, CSS) — supported in Chromium,
+    // ignored harmlessly elsewhere.
+    try { video.fetchPriority = 'low'; } catch (e) {}
     video.src = source;
     video.load();
     var playPromise = video.play();
@@ -35,11 +40,42 @@
     activateHeroVideo(isMobile ? mobileVideo : desktopVideo);
   }
 
-  syncHeroVideo(mql.matches);
+  // The hero video (several MB even compressed) must never compete for
+  // bandwidth with the page's actual first paint. Starting that fetch the
+  // instant script.js runs (right after the DOM is parsed, well before
+  // images/fonts have finished) throttles everything else sharing the
+  // connection — on a slow mobile link this was pushing the real Largest
+  // Contentful Paint element (the hero logo image) out to 20+ seconds,
+  // because it was queued behind an in-flight multi-megabyte video
+  // download. So the first activation waits for the window's 'load' event
+  // (everything else has already been fetched by then), with a short
+  // fallback timer in case 'load' itself is unusually slow.
+  function startInitialHeroVideo() {
+    if (initialActivationDone) return;
+    initialActivationDone = true;
+    syncHeroVideo(mql.matches);
+  }
+
+  if (document.readyState === 'complete') {
+    startInitialHeroVideo();
+  } else {
+    window.addEventListener('load', startInitialHeroVideo);
+    setTimeout(startInitialHeroVideo, 4000);
+  }
+
+  // A later breakpoint crossing (the visitor resizes after the page has
+  // already loaded) can activate the newly-relevant video immediately —
+  // there's no more first-paint bandwidth to protect at that point.
   if (mql.addEventListener) {
-    mql.addEventListener('change', function (e) { syncHeroVideo(e.matches); });
+    mql.addEventListener('change', function (e) {
+      if (!initialActivationDone) return;
+      syncHeroVideo(e.matches);
+    });
   } else if (mql.addListener) {
-    mql.addListener(function (e) { syncHeroVideo(e.matches); }); // older Safari
+    mql.addListener(function (e) {
+      if (!initialActivationDone) return;
+      syncHeroVideo(e.matches);
+    }); // older Safari
   }
 })();
 //
@@ -671,6 +707,123 @@ document.addEventListener('DOMContentLoaded', function() {
     observer.observe(e_section);
 
 });
+
+// Mobile section photos (ecology / connectivity / heritage / amenities /
+// fengshui). On phones each section's photo is a plain <img> of a ~1.5MB
+// animated WebP that plays its "Green Habitat, Close at Heart" style text
+// reveal once. As a bare <img> the browser alone decides when that animation
+// runs, so on a fast scroll it plays (or sits half-finished) while off
+// screen, and scrolling back up showed a half-revealed or blank photo —
+// the same complaint the desktop sections had. These get the same
+// treatment as the desktop sections:
+//   * pending  — shows a black frame (the animation's own first frame) and
+//                downloads nothing heavy until the photo is nearly on screen
+//   * playing  — the animated WebP is swapped in once the photo is properly
+//                visible and plays its reveal
+//   * done     — a static copy of the finished frame (pixel-identical to
+//                the end of the animation, ~30-50KB instead of ~1.5MB)
+// A photo that is scrolled past, or scrolled out of view mid-reveal, jumps
+// straight to "done" so scrolling back up always shows the finished
+// artwork, never a replay. Scrolling back to the very top of the page
+// resets them to "pending" along with the desktop sections.
+(function () {
+  const BLACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='700' height='393'>" +
+    "<rect width='100%' height='100%' fill='black'/></svg>");
+  // The animation runs ~3.5-4s once displayed; this is how long after the
+  // animated file finishes loading we wait before locking in the static copy.
+  const PLAY_MS = 5000;
+  const items = [
+    { sel: '.ecology-mobile-bg img',      anim: 'images/ECOLOGY_mobile-1.webp',      done: 'images/ECOLOGY_mobile_final.webp' },
+    { sel: '.connectivity-mobile-bg img', anim: 'images/HUB-mobile-v2.webp',         done: 'images/HUB_mobile_final.webp' },
+    { sel: '.heritage-mobile-bg img',     anim: 'images/HOME_mobile-1.webp',         done: 'images/HOME_mobile_final.webp' },
+    { sel: '.amenities-mobile-bg img',    anim: 'images/AMENITIES_mobile-1.webp',    done: 'images/AMENITIES_mobile_final.webp' },
+    { sel: '.fengshui-mobile-bg img',     anim: 'images/FENGSHUI-mobile-new.webp',   done: 'images/FENGSHUI_mobile_final.webp' }
+  ];
+
+  items.forEach(function (it) {
+    const img = document.querySelector(it.sel);
+    if (!img) return;
+
+    let state = 'pending';   // 'pending' | 'playing' | 'done'
+    let timer = null;
+    let warmed = false;
+
+    function isHidden() { return !img.getClientRects().length; }
+
+    // Quietly pull the animated file into the HTTP cache shortly before the
+    // photo is needed, so the reveal starts the moment it scrolls into view
+    // instead of waiting on a 1.5MB download.
+    function warm() {
+      if (warmed) return;
+      warmed = true;
+      try { fetch(it.anim); } catch (e) {}
+    }
+
+    function showFinal() {
+      clearTimeout(timer);
+      state = 'done';
+      img.loading = 'eager';
+      img.src = it.done;
+    }
+
+    function play() {
+      state = 'playing';
+      img.loading = 'eager';
+      // Pre-decode the static copy so the swap at the end has no flash.
+      const finalImg = new Image();
+      finalImg.src = it.done;
+      img.addEventListener('load', function onLoad() {
+        // Only react to the animated file's load, not the black/final swaps.
+        if (state !== 'playing' || img.currentSrc.indexOf(it.anim) === -1) return;
+        img.removeEventListener('load', onLoad);
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          if (state === 'playing') showFinal();
+        }, PLAY_MS);
+      });
+      img.src = it.anim;
+    }
+
+    function reset() {
+      clearTimeout(timer);
+      state = 'pending';
+      img.loading = 'eager';
+      img.src = BLACK;
+    }
+
+    // Initial state: a photo that is already above the viewport (page was
+    // reloaded part-way down) is simply done; anything else waits, black.
+    if (!isHidden() && img.getBoundingClientRect().bottom <= 0) {
+      showFinal();
+    } else {
+      reset();
+    }
+
+    new IntersectionObserver(function (entries) {
+      const entry = entries[entries.length - 1];
+      if (state === 'pending') {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.3) play();
+      } else if (state === 'playing') {
+        if (!entry.isIntersecting) showFinal();
+      }
+    }, { threshold: [0, 0.3] }).observe(img);
+
+    // Approaching from below: start fetching a screen or so ahead.
+    new IntersectionObserver(function (entries) {
+      if (entries[entries.length - 1].isIntersecting) warm();
+    }, { rootMargin: '0px 0px 100% 0px' }).observe(img);
+
+    sectionResetters.push(function () {
+      if (!isHidden()) reset();
+    });
+    sectionForceCompleters.push({
+      section: img,
+      isDone: function () { return state === 'done'; },
+      complete: function () { if (!isHidden()) showFinal(); }
+    });
+  });
+})();
 
 // Shared top-of-page scroll listener: the only thing that resets all 5
 // scroll-reveal sections back to their pre-animation state is scrolling all
